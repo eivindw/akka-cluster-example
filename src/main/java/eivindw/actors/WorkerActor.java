@@ -18,12 +18,11 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
 
    @Override
    public void onReceive(Object message) throws Exception {
-      System.out.println(getSelf() + " got " + message + " from " + getSender());
-
       if(message.equals(MSG_WORK_AVAILABLE)) {
          getSender().tell(MSG_GIVE_WORK, getSelf());
       } else if(message instanceof MasterChanged) {
          MasterChanged masterChanged = (MasterChanged) message;
+         System.out.println(getSelf() + " new master: " + masterChanged.getMaster());
          masterChanged.getMaster().tell(MSG_REGISTER_WORKER, getSelf());
       }
    }

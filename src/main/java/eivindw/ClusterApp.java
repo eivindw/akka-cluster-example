@@ -6,7 +6,7 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.ClusterSingletonPropsFactory;
 import akka.routing.RandomRouter;
 import eivindw.actors.MasterActor;
-import eivindw.actors.MasterProxy;
+import eivindw.actors.MasterListener;
 import eivindw.actors.WorkerActor;
 
 public class ClusterApp {
@@ -34,12 +34,12 @@ public class ClusterApp {
          }
       }), "singleton");
 
-      actorSystem.actorOf(new Props(WorkerActor.class).withRouter(new RandomRouter(5)));
+      actorSystem.actorOf(new Props(WorkerActor.class).withRouter(new RandomRouter(5)), "workerRouter");
 
       Cluster.get(actorSystem).registerOnMemberUp(new Runnable() {
          @Override
          public void run() {
-            actorSystem.actorOf(new Props(MasterProxy.class));
+            actorSystem.actorOf(new Props(MasterListener.class), "masterListener");
          }
       });
    }
