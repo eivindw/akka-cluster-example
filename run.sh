@@ -1,2 +1,2 @@
 #!/bin/bash
-mvn exec:java -Dexec.args="$1"
+mvn compile exec:java -Dexec.args="$1"
