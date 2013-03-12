@@ -5,6 +5,8 @@ import akka.actor.Address;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.dispatch.OnComplete;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.util.Timeout;
 import eivindw.messages.ConstantMessages;
 import eivindw.messages.MasterChanged;
@@ -18,6 +20,8 @@ import static akka.cluster.ClusterEvent.LeaderChanged;
 import static akka.pattern.Patterns.ask;
 
 public class MasterListener extends UntypedActor implements ConstantMessages {
+
+   private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
    private final Cluster cluster = Cluster.get(getContext().system());
 
@@ -45,7 +49,6 @@ public class MasterListener extends UntypedActor implements ConstantMessages {
    }
 
    private void publishNewMaster(final Address leader, final Object message) {
-      System.out.println("New leader address: " + leader);
       final ActorRef master = getContext().actorFor(leader + "/user/singleton/master");
 
       Future<Object> ping = ask(master, MSG_PING, new Timeout(Duration.create(1, TimeUnit.SECONDS)));
@@ -54,7 +57,7 @@ public class MasterListener extends UntypedActor implements ConstantMessages {
          @Override
          public void onComplete(Throwable failure, Object pong) throws Throwable {
             if(failure != null) {
-               System.out.println("No reply from master - retry in 1 second");
+               log.warning("No reply from master yet - retry in 1 second");
                getContext().system().scheduler().scheduleOnce(
                   Duration.create(1, TimeUnit.SECONDS),
                   getSelf(),
