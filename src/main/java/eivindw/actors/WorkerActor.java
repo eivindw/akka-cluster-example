@@ -29,16 +29,16 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
    public void onReceive(Object message) throws Exception {
       if(message.equals(MSG_WORK_AVAILABLE)) {
          if(working) {
-            log.info("Working... not interested!");
+            //log.info("Working... not interested!");
          } else {
             getSender().tell(MSG_GIVE_WORK, getSelf());
          }
       } else if(message instanceof MasterChanged) {
          MasterChanged masterChanged = (MasterChanged) message;
-         log.info("New master: " + masterChanged.getMaster());
+         System.out.println(name() + " New master: " + masterChanged.getMaster());
          masterChanged.getMaster().tell(MSG_REGISTER_WORKER, getSelf());
       } else if(message.equals(MSG_WORK)) {
-         log.info("Got work!");
+         System.out.println(name() + " Got work!");
          working = true;
          Futures.future(new Callable<Void>() {
             @Override
@@ -51,5 +51,9 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
       } else {
          unhandled(message);
       }
+   }
+
+   private String name() {
+      return "[Worker " + getSelf().path().name() + "]";
    }
 }

@@ -57,7 +57,7 @@ public class MasterListener extends UntypedActor implements ConstantMessages {
          @Override
          public void onComplete(Throwable failure, Object pong) throws Throwable {
             if(failure != null) {
-               log.warning("No reply from master yet - retry in 1 second");
+               System.out.println("[MasterListener] No reply from master yet - retry in 1 second");
                getContext().system().scheduler().scheduleOnce(
                   Duration.create(1, TimeUnit.SECONDS),
                   getSelf(),
@@ -65,6 +65,7 @@ public class MasterListener extends UntypedActor implements ConstantMessages {
                   getContext().dispatcher()
                );
             } else {
+               System.out.println("[MasterListener] Reply from new master!");
                getContext().system().eventStream().publish(new MasterChanged(master));
             }
          }

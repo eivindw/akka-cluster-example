@@ -29,18 +29,18 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
    @Override
    public void onReceive(Object message) throws Exception {
       if(message.equals(MSG_WAKE_UP)) {
-         log.info("Scheduled wake-up - worker count: " + workers.size());
+         System.out.println("[Master] Scheduled wake-up - worker count: " + workers.size());
          for (ActorRef worker : workers) {
             worker.tell(MSG_WORK_AVAILABLE, getSelf());
          }
          scheduleWakeUp();
       } else if(message.equals(MSG_REGISTER_WORKER)) {
-         log.info("New worker: " + getSender());
+         System.out.println("[Master] New worker: " + getSender());
          getContext().watch(getSender());
          workers.add(getSender());
       } else if(message instanceof Terminated) {
          Terminated terminated = (Terminated) message;
-         log.info("Removing worker: " + terminated.getActor());
+         System.out.println("[Master] Removing worker: " + terminated.getActor());
          workers.remove(terminated.getActor());
       } else if(message.equals(MSG_GIVE_WORK)) {
          if(RANDOM.nextBoolean()) {
@@ -55,7 +55,7 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
 
    private void scheduleWakeUp() {
       context().system().scheduler().scheduleOnce(
-         Duration.create(2, TimeUnit.SECONDS),
+         Duration.create(5, TimeUnit.SECONDS),
          getSelf(),
          MSG_WAKE_UP,
          context().dispatcher()
