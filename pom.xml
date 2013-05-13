@@ -6,12 +6,11 @@
 
    <name>Akka Cluster Example</name>
    <groupId>eivindw</groupId>
-   <artifactId>akke-cluster-example</artifactId>
+   <artifactId>akka-cluster-example</artifactId>
    <packaging>jar</packaging>
    <version>1.0-SNAPSHOT</version>
    <properties>
       <akka.version>2.1.2</akka.version>
-      <junit.version>4.11</junit.version>
    </properties>
 
    <dependencies>
@@ -24,18 +23,6 @@
          <groupId>com.typesafe.akka</groupId>
          <artifactId>akka-contrib_2.10</artifactId>
          <version>${akka.version}</version>
-      </dependency>
-      <dependency>
-         <groupId>com.typesafe.akka</groupId>
-         <artifactId>akka-testkit_2.10</artifactId>
-         <version>${akka.version}</version>
-         <scope>test</scope>
-      </dependency>
-      <dependency>
-         <groupId>junit</groupId>
-         <artifactId>junit</artifactId>
-         <version>${junit.version}</version>
-         <scope>test</scope>
       </dependency>
    </dependencies>
 
