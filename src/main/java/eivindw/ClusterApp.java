@@ -9,6 +9,8 @@ import akka.routing.RandomRouter;
 import eivindw.actors.MasterActor;
 import eivindw.actors.WorkerActor;
 
+import static eivindw.messages.ConstantMessages.TOPIC_WORKERS;
+
 public class ClusterApp {
 
    public static void main(String[] args) {
@@ -27,6 +29,6 @@ public class ClusterApp {
          }
       ), "singleton");
 
-      actorSystem.actorOf(Props.create(WorkerActor.class).withRouter(new RandomRouter(5)), "workerRouter");
+      actorSystem.actorOf(Props.create(WorkerActor.class).withRouter(new RandomRouter(5)), TOPIC_WORKERS);
    }
 }

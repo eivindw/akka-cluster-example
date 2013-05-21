@@ -21,12 +21,12 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
 
    @Override
    public void preStart() {
-      mediator.tell(new DistributedPubSubMediator.Subscribe("workers", getSelf()), getSelf());
+      mediator.tell(new DistributedPubSubMediator.Subscribe(TOPIC_WORKERS, getSelf()), getSelf());
    }
 
    @Override
    public void postStop() {
-      mediator.tell(new DistributedPubSubMediator.Unsubscribe("workers", getSelf()), getSelf());
+      mediator.tell(new DistributedPubSubMediator.Unsubscribe(TOPIC_WORKERS, getSelf()), getSelf());
    }
 
    @Override

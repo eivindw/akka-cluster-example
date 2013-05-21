@@ -31,7 +31,7 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
       if(message.equals(MSG_WAKE_UP)) {
          log.info("[Master] Scheduled wake-up!");
 
-         mediator.tell(new DistributedPubSubMediator.Publish("workers", MSG_WORK_AVAILABLE), getSelf());
+         mediator.tell(new DistributedPubSubMediator.Publish(TOPIC_WORKERS, MSG_WORK_AVAILABLE), getSelf());
 
          scheduleWakeUp();
       } else if(message instanceof Terminated) {
