@@ -3,51 +3,47 @@ package eivindw.actors;
 import akka.actor.ActorRef;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import eivindw.messages.ConstantMessages;
 import scala.concurrent.duration.Duration;
 
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MasterActor extends UntypedActor implements ConstantMessages {
 
    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
+   private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+
    private static final Random RANDOM = new Random();
 
-   private Set<ActorRef> workers;
-
    public MasterActor() {
-      workers = new HashSet<>();
+      log.info("Starting master!");
       scheduleWakeUp();
    }
 
    @Override
    public void onReceive(Object message) throws Exception {
       if(message.equals(MSG_WAKE_UP)) {
-         System.out.println("[Master] Scheduled wake-up - worker count: " + workers.size());
-         for (ActorRef worker : workers) {
-            worker.tell(MSG_WORK_AVAILABLE, getSelf());
-         }
+         log.info("[Master] Scheduled wake-up!");
+
+         mediator.tell(new DistributedPubSubMediator.Publish("workers", MSG_WORK_AVAILABLE), getSelf());
+
          scheduleWakeUp();
-      } else if(message.equals(MSG_REGISTER_WORKER)) {
-         System.out.println("[Master] New worker: " + getSender());
-         getContext().watch(getSender());
-         workers.add(getSender());
       } else if(message instanceof Terminated) {
          Terminated terminated = (Terminated) message;
-         System.out.println("[Master] Removing worker: " + terminated.getActor());
-         workers.remove(terminated.getActor());
+         log.info("Active worker crashed: " + terminated.getActor());
       } else if(message.equals(MSG_GIVE_WORK)) {
          if(RANDOM.nextBoolean()) {
+            getContext().watch(getSender());
             getSender().tell(MSG_WORK, getSelf());
          }
-      } else if(message.equals(MSG_PING)) {
-         getSender().tell(MSG_PONG, getSelf());
+      } else if(message.equals(MSG_WORK_DONE)) {
+         getContext().unwatch(getSender());
       } else {
          unhandled(message);
       }
@@ -58,7 +54,8 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
          Duration.create(5, TimeUnit.SECONDS),
          getSelf(),
          MSG_WAKE_UP,
-         context().dispatcher()
+         context().dispatcher(),
+         null
       );
    }
 }

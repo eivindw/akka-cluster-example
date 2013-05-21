@@ -1,11 +1,13 @@
 package eivindw.actors;
 
+import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.dispatch.Futures;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import eivindw.messages.ConstantMessages;
-import eivindw.messages.MasterChanged;
 
 import java.util.concurrent.Callable;
 
@@ -13,16 +15,18 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
 
    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
+   private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+
    private boolean working = false;
 
    @Override
    public void preStart() {
-      getContext().system().eventStream().subscribe(getSelf(), MasterChanged.class);
+      mediator.tell(new DistributedPubSubMediator.Subscribe("workers", getSelf()), getSelf());
    }
 
    @Override
    public void postStop() {
-      getContext().system().eventStream().unsubscribe(getSelf());
+      mediator.tell(new DistributedPubSubMediator.Unsubscribe("workers", getSelf()), getSelf());
    }
 
    @Override
@@ -31,29 +35,26 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
          if(working) {
             //log.info("Working... not interested!");
          } else {
+            //log.info("Work wanted!");
             getSender().tell(MSG_GIVE_WORK, getSelf());
          }
-      } else if(message instanceof MasterChanged) {
-         MasterChanged masterChanged = (MasterChanged) message;
-         System.out.println(name() + " New master: " + masterChanged.getMaster());
-         masterChanged.getMaster().tell(MSG_REGISTER_WORKER, getSelf());
       } else if(message.equals(MSG_WORK)) {
-         System.out.println(name() + " Got work!");
+         final ActorRef master = getSender();
+         log.info("Got work!");
          working = true;
          Futures.future(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
                Thread.sleep(10000);
                working = false;
+               master.tell(MSG_WORK_DONE, getSelf());
                return null;
             }
          }, getContext().dispatcher());
+      } else if(message instanceof DistributedPubSubMediator.SubscribeAck) {
+         log.info("Subscribed to 'workers'!");
       } else {
          unhandled(message);
       }
-   }
-
-   private String name() {
-      return "[Worker " + getSelf().path().name() + "]";
    }
 }

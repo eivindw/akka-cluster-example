@@ -1,46 +1,32 @@
 package eivindw;
 
-import akka.actor.*;
-import akka.cluster.Cluster;
+import akka.actor.ActorSystem;
+import akka.actor.PoisonPill;
+import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.ClusterSingletonPropsFactory;
 import akka.routing.RandomRouter;
 import eivindw.actors.MasterActor;
-import eivindw.actors.MasterListener;
 import eivindw.actors.WorkerActor;
 
 public class ClusterApp {
 
    public static void main(String[] args) {
       if (args.length > 0) {
-         System.setProperty("akka.remote.netty.port", args[0]);
+         System.setProperty("akka.remote.netty.tcp.port", args[0]);
       }
 
       final ActorSystem actorSystem = ActorSystem.create("ClusterExample");
 
-      actorSystem.actorOf(new Props(new UntypedActorFactory() {
-         @Override
-         public Actor create() throws Exception {
-            return new ClusterSingletonManager(
-               "master",
-               PoisonPill.getInstance(),
-               new ClusterSingletonPropsFactory() {
-                  @Override
-                  public Props create(Object handOverData) {
-                     return new Props(MasterActor.class);
-                  }
-               }
-            );
+      actorSystem.actorOf(ClusterSingletonManager.defaultProps("master", PoisonPill.getInstance(), null,
+         new ClusterSingletonPropsFactory() {
+            @Override
+            public Props create(Object handOverData) {
+               return Props.create(MasterActor.class);
+            }
          }
-      }), "singleton");
+      ), "singleton");
 
-      actorSystem.actorOf(new Props(WorkerActor.class).withRouter(new RandomRouter(5)), "workerRouter");
-
-      Cluster.get(actorSystem).registerOnMemberUp(new Runnable() {
-         @Override
-         public void run() {
-            actorSystem.actorOf(new Props(MasterListener.class), "masterListener");
-         }
-      });
+      actorSystem.actorOf(Props.create(WorkerActor.class).withRouter(new RandomRouter(5)), "workerRouter");
    }
 }
