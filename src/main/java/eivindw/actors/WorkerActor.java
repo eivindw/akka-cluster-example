@@ -32,10 +32,7 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
    @Override
    public void onReceive(Object message) throws Exception {
       if(message.equals(MSG_WORK_AVAILABLE)) {
-         if(working) {
-            //log.info("Working... not interested!");
-         } else {
-            //log.info("Work wanted!");
+         if(!working) {
             getSender().tell(MSG_GIVE_WORK, getSelf());
          }
       } else if(message.equals(MSG_WORK)) {
@@ -45,7 +42,7 @@ public class WorkerActor extends UntypedActor implements ConstantMessages {
          Futures.future(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-               Thread.sleep(10000);
+               Thread.sleep(10000); // real work code goes here
                working = false;
                master.tell(MSG_WORK_DONE, getSelf());
                return null;

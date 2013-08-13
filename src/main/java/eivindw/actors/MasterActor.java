@@ -38,7 +38,7 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
          Terminated terminated = (Terminated) message;
          log.info("Active worker crashed: " + terminated.getActor());
       } else if(message.equals(MSG_GIVE_WORK)) {
-         if(RANDOM.nextBoolean()) {
+         if(RANDOM.nextBoolean()) { // obtain real work here
             getContext().watch(getSender());
             getSender().tell(MSG_WORK, getSelf());
          }
