@@ -1,19 +1,20 @@
 package eivindw.actors;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.japi.pf.ReceiveBuilder;
 import eivindw.messages.ConstantMessages;
 import scala.concurrent.duration.Duration;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class MasterActor extends UntypedActor implements ConstantMessages {
+public class MasterActor extends AbstractActor implements ConstantMessages {
 
    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
@@ -23,36 +24,31 @@ public class MasterActor extends UntypedActor implements ConstantMessages {
 
    public MasterActor() {
       log.info("Starting master!");
+
+      receive(ReceiveBuilder
+            .matchEquals(MSG_WAKE_UP, msg -> {
+               log.info("[Master] Scheduled wake-up!");
+               mediator.tell(new DistributedPubSubMediator.Publish(TOPIC_WORKERS, MSG_WORK_AVAILABLE), self());
+               scheduleWakeUp();
+            })
+            .matchEquals(MSG_GIVE_WORK, msg -> {
+               if (RANDOM.nextBoolean()) { // obtain real work here
+                  getContext().watch(sender());
+                  sender().tell(MSG_WORK, self());
+               }
+            })
+            .matchEquals(MSG_WORK_DONE, msg -> getContext().unwatch(sender()))
+            .match(Terminated.class, msg -> log.info("Active worker crashed: " + msg.getActor()))
+            .build()
+      );
+
       scheduleWakeUp();
-   }
-
-   @Override
-   public void onReceive(Object message) throws Exception {
-      if(message.equals(MSG_WAKE_UP)) {
-         log.info("[Master] Scheduled wake-up!");
-
-         mediator.tell(new DistributedPubSubMediator.Publish(TOPIC_WORKERS, MSG_WORK_AVAILABLE), getSelf());
-
-         scheduleWakeUp();
-      } else if(message instanceof Terminated) {
-         Terminated terminated = (Terminated) message;
-         log.info("Active worker crashed: " + terminated.getActor());
-      } else if(message.equals(MSG_GIVE_WORK)) {
-         if(RANDOM.nextBoolean()) { // obtain real work here
-            getContext().watch(getSender());
-            getSender().tell(MSG_WORK, getSelf());
-         }
-      } else if(message.equals(MSG_WORK_DONE)) {
-         getContext().unwatch(getSender());
-      } else {
-         unhandled(message);
-      }
    }
 
    private void scheduleWakeUp() {
       context().system().scheduler().scheduleOnce(
          Duration.create(5, TimeUnit.SECONDS),
-         getSelf(),
+         self(),
          MSG_WAKE_UP,
          context().dispatcher(),
          null

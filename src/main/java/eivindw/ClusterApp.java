@@ -4,8 +4,7 @@ import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
-import akka.contrib.pattern.ClusterSingletonPropsFactory;
-import akka.routing.RandomRouter;
+import akka.routing.RandomPool;
 import eivindw.actors.MasterActor;
 import eivindw.actors.WorkerActor;
 
@@ -20,15 +19,16 @@ public class ClusterApp {
 
       final ActorSystem actorSystem = ActorSystem.create("ClusterExample");
 
-      actorSystem.actorOf(ClusterSingletonManager.defaultProps("master", PoisonPill.getInstance(), null,
-         new ClusterSingletonPropsFactory() {
-            @Override
-            public Props create(Object handOverData) {
-               return Props.create(MasterActor.class);
-            }
-         }
+      actorSystem.actorOf(ClusterSingletonManager.defaultProps(
+         Props.create(MasterActor.class),
+         "master",
+         PoisonPill.getInstance(),
+         null
       ), "singleton");
 
-      actorSystem.actorOf(Props.create(WorkerActor.class).withRouter(new RandomRouter(5)), TOPIC_WORKERS);
+      actorSystem.actorOf(
+         new RandomPool(5).props(Props.create(WorkerActor.class)),
+         TOPIC_WORKERS
+      );
    }
 }
